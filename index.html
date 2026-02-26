@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>配管材料 拾い出しツール</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f5f7;
+      color: #222;
+    }
+    .app {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    header { margin-bottom: 16px; }
+    header h1 {
+      font-size: 1.4rem;
+      margin: 0 0 4px;
+    }
+    header p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: #555;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-subtitle {
+      font-size: 0.8rem;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 12px;
+    }
+    @media (min-width: 720px) {
+      .grid-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      margin-bottom: 3px;
+      color: #444;
+    }
+    select, input[type="number"], input[type="text"], input[type="date"] {
+      width: 100%;
+      font-size: 0.9rem;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      outline: none;
+      background: #fafafa;
+    }
+    select:focus, input:focus {
+      border-color: #2979ff;
+      background: #fff;
+      box-shadow: 0 0 0 2px rgba(41,121,255,0.15);
+    }
+    .btn-row {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .btn-primary { background: #2979ff; color: #fff; }
+    .btn-secondary { background: #e0e0e0; color: #333; }
+    .btn-danger { background: #ef5350; color: #fff; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    th, td {
+      padding: 6px 4px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+      white-space: nowrap;
+    }
+    th { font-weight: 600; background: #fafafa; }
+    tbody tr:nth-child(even) { background: #fcfcfc; }
+    .text-right { text-align: right; }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .chip {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #eeeeee;
+    }
+    .small-text {
+      font-size: 0.75rem;
+      color: #777;
+    }
+    .entry-list {
+      max-height: 220px;
+      overflow-y: auto;
+      border-radius: 12px;
+      border: 1px solid #eee;
+      padding: 4px 0;
+      background: #fafafa;
+      margin-top: 4px;
+    }
+    .entry-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      border-bottom: 1px solid #eee;
+    }
+    .entry-item:last-child { border-bottom: none; }
+    .entry-main { display: flex; flex-direction: column; }
+    .entry-label { font-weight: 500; }
+    .entry-meta {
+      font-size: 0.7rem;
+      color: #666;
+    }
+    .pill {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: #e0f2f1;
+      color: #00695c;
+      margin-left: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>配管材料 拾い出しツール</h1>
+      <p>現場で管・継手の数量をどんどん入れて、種類ごとに自動集計するための簡易アプリです。</p>
+    </header>
+
+    <!-- 現場情報 -->
+    <section class="card">
+      <div class="card-title">
+        <span>現場情報</span>
+      </div>
+      <div class="card-subtitle">
+        現場名・工事名・日付を入れておくと、CSVにも一緒に出力されます。
+      </div>
+      <div class="grid">
+        <div>
+          <label for="site-name">現場名</label>
+          <input id="site-name" type="text" placeholder="例: ○○マンション改修工事 ○○様邸 など" />
+        </div>
+        <div>
+          <label for="work-name">工事名</label>
+          <input id="work-name" type="text" placeholder="例: 給排水配管更新工事 など" />
+        </div>
+        <div>
+          <label for="site-date">日付</label>
+          <input id="site-date" type="date" />
+        </div>
+      </div>
+    </section>
+
+    <!-- 材料入力カード -->
+    <section class="card">
+      <div class="card-title">
+        <span>材料入力</span>
+        <span class="badge">STEP 1: 1行ずつ追加</span>
+      </div>
+      <div class="card-subtitle">
+        種別（管／継手／異径継手／伸縮継手／配管固定金具／その他）を選んで数量を入力 → <strong>この内容を追加</strong>で登録。
+      </div>
+
+      <div class="grid grid-3" style="margin-bottom: 8px;">
+        <div>
+          <label for="category">種別</label>
+          <select id="category">
+            <option value="pipe">管</option>
+            <option value="fitting">継手</option>
+            <option value="reducing">異径継手</option>
+            <option value="expansion">伸縮継手</option>
+            <option value="support">配管固定金具</option>
+            <option value="other">その他</option>
+          </select>
+        </div>
+        <div>
+          <label for="pipe-type">管種</label>
+          <select id="pipe-type">
+            <option value="HI">HI</option>
+            <option value="VU">VU</option>
+            <option value="VP">VP</option>
+            <option value="DV">DV</option>
+            <option value="TS">TS</option>
+            <option value="HI-TS">HI-TS</option>
+            <option value="HT">HT</option>
+            <option value="HT耐熱">HT耐熱</option>
+            <option value="HI VP">HI VP</option>
+            <option value="銅管">銅管</option>
+            <option value="SGP">SGP</option>
+            <option value="SUS">SUS</option>
+            <option value="ポリ管">ポリ管</option>
+            <option value="PE">PE</option>
+          </select>
+        </div>
+        <div>
+          <label for="size">呼び径 (A)</label>
+          <select id="size">
+            <option value="13">13A</option>
+            <option value="20">20A</option>
+            <option value="25">25A</option>
+            <option value="32">32A</option>
+            <option value="40">40A</option>
+            <option value="50">50A</option>
+            <option value="65">65A</option>
+            <option value="80">80A</option>
+            <option value="100">100A</option>
+            <option value="125">125A</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 材質（配管固定金具用） -->
+      <div class="grid" id="material-row" style="margin-bottom: 8px; display:none;">
+        <div>
+          <label for="material">材質</label>
+          <select id="material">
+            <option value="鉄">鉄</option>
+            <option value="ステンレス">ステンレス</option>
+            <option value="樹脂">樹脂</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 異径用の呼び径2 -->
+      <div class="grid" id="size2-row" style="margin-bottom: 8px; display:none;">
+        <div>
+          <label for="size2">呼び径2 (A)</label>
+          <select id="size2">
+            <option value="13">13A</option>
+            <option value="20">20A</option>
+            <option value="25">25A</option>
+            <option value="32">32A</option>
+            <option value="40">40A</option>
+            <option value="50">50A</option>
+            <option value="65">65A</option>
+            <option value="80">80A</option>
+            <option value="100">100A</option>
+            <option value="125">125A</option>
+          </select>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <div class="small-text">※異径継手の相手側の呼び径</div>
+        </div>
+      </div>
+
+      <!-- 管用 -->
+      <div id="pipe-fields" class="grid" style="margin-bottom: 4px;">
+        <div>
+          <label for="pipe-length">延長 (m)</label>
+          <input id="pipe-length" type="number" min="0" step="0.1" placeholder="例: 12.5" />
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <div class="small-text">※曲がりは継手で別途カウント</div>
+        </div>
+      </div>
+
+      <!-- 継手・金具系共通 -->
+      <div id="fitting-fields" class="grid" style="margin-bottom: 4px; display:none;">
+        <div>
+          <label for="fitting-type">継手種類 / 金具種類</label>
+          <select id="fitting-type"></select>
+        </div>
+        <div>
+          <label for="fitting-qty">数量</label>
+          <input id="fitting-qty" type="number" min="0" step="1" placeholder="例: 12" />
+        </div>
+      </div>
+
+      <!-- その他用フリーテキスト -->
+      <div id="other-fields" class="grid" style="margin-bottom: 4px; display:none;">
+        <div>
+          <label for="other-name">名称（ポンプ・給湯器など）</label>
+          <input id="other-name" type="text" placeholder="例: 給湯器24号 フルオート など" />
+        </div>
+        <div>
+          <label for="other-qty">数量</label>
+          <input id="other-qty" type="number" min="0" step="1" placeholder="例: 1" />
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="add-entry-btn">この内容を追加</button>
+        <span class="small-text">※入力した行は下の「入力履歴」と「集計結果」に反映されます。</span>
+      </div>
+    </section>
+
+    <!-- 入力履歴 -->
+    <section class="card">
+      <div class="card-title">
+        <span>入力履歴</span>
+        <button class="btn-secondary btn-small" id="clear-all-btn" type="button">
+          全て削除
+        </button>
+      </div>
+      <div class="card-subtitle">
+        入力した行を確認する用。間違えた行は削除できます。
+      </div>
+
+      <div class="entry-list" id="entry-list"></div>
+      <div class="small-text" style="margin-top:6px;">
+        ※データはブラウザに保存されます（同じ端末・ブラウザなら再表示しても残ります）。
+      </div>
+    </section>
+
+    <!-- 集計結果 -->
+    <section class="card">
+      <div class="card-title">
+        <span>集計結果（拾い出し表）</span>
+        <button class="btn-secondary" id="copy-csv-btn" type="button">
+          CSVをコピー
+        </button>
+      </div>
+      <div class="card-subtitle">
+        管種 × 呼び径 × 種別ごとに数量をまとめています。Excelや見積ソフトにペーストして使えます。
+      </div>
+
+      <!-- 現場情報の表示 -->
+      <div class="small-text" id="meta-display" style="margin-bottom: 8px;">
+        <div>現場名：<span id="display-site-name"></span></div>
+        <div>工事名：<span id="display-work-name"></span></div>
+        <div>日付：<span id="display-site-date"></span></div>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>種別</th>
+              <th>管種／材質</th>
+              <th>呼び径</th>
+              <th>継手種類／名称</th>
+              <th class="text-right">数量</th>
+              <th>単位</th>
+            </tr>
+          </thead>
+          <tbody id="summary-body"></tbody>
+        </table>
+      </div>
+      <div class="chips">
+        <span class="chip">管: 数量 = 延長(m)</span>
+        <span class="chip">継手・異径継手・伸縮継手・配管固定金具・その他: 数量 = 個数</span>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "pipe_takeoff_entries_v5";
+    const META_KEY = "pipe_takeoff_meta_v1";
+
+    /** @typedef {{
+     *  id: string,
+     *  category: 'pipe' | 'fitting' | 'reducing' | 'expansion' | 'support' | 'other',
+     *  pipeType: string,   // pipe:管種 / support:材質 / other:""
+     *  size: string,
+     *  size2?: string,
+     *  fittingType?: string,
+     *  length?: number,
+     *  quantity?: number
+     * }} Entry */
+
+    /** @type {Entry[]} */
+    let entries = [];
+
+    let meta = {
+      siteName: "",
+      workName: "",
+      date: ""
+    };
+
+    // 通常継手用（ギボルト等は除外／バルソケメタル追加）
+    const FITTING_OPTIONS = [
+      "90°エルボ",
+      "45°エルボ",
+      "45°エルボ(ショート)",
+      "45°エルボ(ロング)",
+      "22.5°エルボ",
+      "チーズ",
+      "クロス",
+      "ソケット",
+      "ユニオン",
+      "キャップ",
+      "バルブソケット",
+      "バルブソケット(メタル)",
+      "水栓ソケット",
+      "水栓エルボ",
+      "水栓チーズ",
+      "90°大曲りエルボ",
+      "90°大曲りY",
+      "90°Y",
+      "45°Y",
+      "排水バルブエルボ",
+      "排水バルブソケット"
+    ];
+
+    // 伸縮継手用（3種類）
+    const EXPANSION_OPTIONS = [
+      "ギボルト",
+      "MDジョイント",
+      "ストラブカップリング"
+    ];
+
+    // 異径継手用
+    const REDUCING_OPTIONS = [
+      "異径エルボ",
+      "異径チーズ",
+      "異径ソケット",
+      "インクリーザー"
+    ];
+
+    // 配管固定金具用
+    const SUPPORT_OPTIONS = [
+      "Uボルト",
+      "ねじ込みT字脚",
+      "羽子板ボルト",
+      "T字脚",
+      "吊りバンド",
+      "自在ベース型吊りバンド",
+      "防振ゴム付吊りバンド",
+      "防振ゴム付立バンド",
+      "吊り金具用ワイヤ",
+      "配管支持用アングル"
+    ];
+
+    const $ = (id) => document.getElementById(id);
+
+    function loadEntries() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        entries = raw ? JSON.parse(raw) : [];
+      } catch {
+        entries = [];
+      }
+    }
+
+    function saveEntries() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      } catch {}
+    }
+
+    function loadMeta() {
+      try {
+        const raw = localStorage.getItem(META_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          meta = { ...meta, ...parsed };
+        }
+      } catch {}
+    }
+
+    function saveMeta() {
+      try {
+        localStorage.setItem(META_KEY, JSON.stringify(meta));
+      } catch {}
+    }
+
+    function genId() {
+      return "e_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+    }
+
+    function formatNumber(num, digits = 2) {
+      if (num == null || isNaN(num)) return "";
+      return Number(num).toFixed(digits).replace(/\.00$/, "");
+    }
+
+    function csvEscape(value) {
+      const s = String(value ?? "");
+      if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }
+
+    // 現場情報の表示更新
+    function renderMetaDisplay() {
+      const siteSpan = $("display-site-name");
+      const workSpan = $("display-work-name");
+      const dateSpan = $("display-site-date");
+      if (!siteSpan || !workSpan || !dateSpan) return;
+
+      siteSpan.textContent = meta.siteName || "";
+      workSpan.textContent = meta.workName || "";
+      dateSpan.textContent = meta.date || "";
+    }
+
+    // 種別ごとに継手候補を切り替え
+    function populateFittingOptions(category) {
+      const select = $("fitting-type");
+      if (!select) return;
+      select.innerHTML = "";
+
+      let options;
+      if (category === "expansion") options = EXPANSION_OPTIONS;
+      else if (category === "reducing") options = REDUCING_OPTIONS;
+      else if (category === "support") options = SUPPORT_OPTIONS;
+      else options = FITTING_OPTIONS;
+
+      options.forEach((name) => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+      });
+    }
+
+    // 入力履歴表示
+    function renderEntryList() {
+      const container = $("entry-list");
+      container.innerHTML = "";
+
+      if (!entries.length) {
+        const empty = document.createElement("div");
+        empty.className = "small-text";
+        empty.style.padding = "8px 10px";
+        empty.textContent = "まだ何も入力されていません。上のフォームから追加してください。";
+        container.appendChild(empty);
+        return;
+      }
+
+      entries.forEach((entry) => {
+        const row = document.createElement("div");
+        row.className = "entry-item";
+
+        const main = document.createElement("div");
+        main.className = "entry-main";
+
+        const label = document.createElement("div");
+        label.className = "entry-label";
+
+        let catLabel;
+        if (entry.category === "pipe") catLabel = "管";
+        else if (entry.category === "expansion") catLabel = "伸縮継手";
+        else if (entry.category === "reducing") catLabel = "異径継手";
+        else if (entry.category === "support") catLabel = "配管固定金具";
+        else if (entry.category === "other") catLabel = "その他";
+        else catLabel = "継手";
+
+        const sizeStr =
+          entry.category === "reducing" && entry.size2
+            ? `${entry.size}A×${entry.size2}A`
+            : (entry.category === "other" ? "" : `${entry.size}A`);
+
+        if (entry.category === "other") {
+          label.textContent = `[${catLabel}] ${entry.fittingType || ""}`;
+        } else if (entry.category === "support") {
+          label.textContent = `[${catLabel}] ${entry.pipeType} ${sizeStr}`; // pipeType=材質
+          if (entry.fittingType) {
+            const pill = document.createElement("span");
+            pill.className = "pill";
+            pill.textContent = entry.fittingType;
+            label.appendChild(pill);
+          }
+        } else {
+          label.textContent = `[${catLabel}] ${entry.pipeType} ${sizeStr}`;
+          if (entry.fittingType) {
+            const pill = document.createElement("span");
+            pill.className = "pill";
+            pill.textContent = entry.fittingType;
+            label.appendChild(pill);
+          }
+        }
+
+        const metaEl = document.createElement("div");
+        metaEl.className = "entry-meta";
+        metaEl.textContent =
+          entry.category === "pipe"
+            ? `延長: ${formatNumber(entry.length)} m`
+            : `数量: ${entry.quantity}`;
+
+        main.appendChild(label);
+        main.appendChild(metaEl);
+
+        const right = document.createElement("div");
+        const delBtn = document.createElement("button");
+        delBtn.className = "btn-danger";
+        delBtn.type = "button";
+        delBtn.textContent = "削除";
+        delBtn.style.fontSize = "0.7rem";
+        delBtn.onclick = () => {
+          entries = entries.filter((e) => e.id !== entry.id);
+          saveEntries();
+          renderEntryList();
+          renderSummary();
+        };
+        right.appendChild(delBtn);
+
+        row.appendChild(main);
+        row.appendChild(right);
+        container.appendChild(row);
+      });
+    }
+
+    // 集計表示
+    function renderSummary() {
+      const tbody = $("summary-body");
+      tbody.innerHTML = "";
+
+      if (!entries.length) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 6;
+        td.className = "small-text";
+        td.textContent = "まだ集計するデータがありません。上のフォームから追加してください。";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+
+      const groups = {};
+      entries.forEach((entry) => {
+        const key = [
+          entry.category,
+          entry.pipeType || "",
+          entry.size || "",
+          entry.size2 || "",
+          entry.fittingType || ""
+        ].join("|");
+
+        if (!groups[key]) {
+          groups[key] = {
+            category: entry.category,
+            pipeType: entry.pipeType || "",
+            size: entry.size || "",
+            size2: entry.size2 || "",
+            fittingType: entry.fittingType || "",
+            totalQty: 0,
+            unit: entry.category === "pipe" ? "m" : "コ",
+          };
+        }
+
+        if (entry.category === "pipe") {
+          groups[key].totalQty += Number(entry.length || 0);
+        } else {
+          groups[key].totalQty += Number(entry.quantity || 0);
+        }
+      });
+
+      const rows = Object.values(groups);
+
+      const orderMap = {
+        pipe: 0,
+        fitting: 1,
+        reducing: 2,
+        expansion: 3,
+        support: 4,
+        other: 5
+      };
+
+      rows.sort((a, b) => {
+        const catOrder = (orderMap[a.category] ?? 9) - (orderMap[b.category] ?? 9);
+        if (catOrder !== 0) return catOrder;
+        if (a.pipeType !== b.pipeType) return a.pipeType.localeCompare(b.pipeType, "ja");
+        const sizeA = Number(a.size || 0);
+        const sizeB = Number(b.size || 0);
+        if (!isNaN(sizeA) && !isNaN(sizeB) && sizeA !== sizeB) return sizeA - sizeB;
+        const size2A = Number(a.size2 || 0);
+        const size2B = Number(b.size2 || 0);
+        if (!isNaN(size2A) && !isNaN(size2B) && size2A !== size2B) return size2A - size2B;
+        return (a.fittingType || "").localeCompare(b.fittingType || "", "ja");
+      });
+
+      rows.forEach((r) => {
+        const tr = document.createElement("tr");
+
+        let catLabel;
+        if (r.category === "pipe") catLabel = "管";
+        else if (r.category === "expansion") catLabel = "伸縮継手";
+        else if (r.category === "reducing") catLabel = "異径継手";
+        else if (r.category === "support") catLabel = "配管固定金具";
+        else if (r.category === "other") catLabel = "その他";
+        else catLabel = "継手";
+
+        const sizeStr =
+          r.category === "reducing" && r.size2
+            ? `${r.size}A×${r.size2}A`
+            : (r.category === "other" ? "" : (r.size ? `${r.size}A` : ""));
+
+        const tdCat = document.createElement("td");
+        tdCat.textContent = catLabel;
+        tr.appendChild(tdCat);
+
+        const tdPipeType = document.createElement("td");
+        tdPipeType.textContent =
+          r.category === "other"
+            ? ""
+            : (r.category === "support" ? r.pipeType : r.pipeType); // support=材質
+        tr.appendChild(tdPipeType);
+
+        const tdSize = document.createElement("td");
+        tdSize.textContent = sizeStr;
+        tr.appendChild(tdSize);
+
+        const tdFitType = document.createElement("td");
+        tdFitType.textContent = r.fittingType || "";
+        tr.appendChild(tdFitType);
+
+        const tdQty = document.createElement("td");
+        tdQty.className = "text-right";
+        tdQty.textContent = formatNumber(r.totalQty);
+        tr.appendChild(tdQty);
+
+        const tdUnit = document.createElement("td");
+        tdUnit.textContent = r.unit;
+        tr.appendChild(tdUnit);
+
+        tbody.appendChild(tr);
+      });
+
+      window.__summaryRows = rows;
+    }
+
+    // 種別切り替え
+    function onCategoryChange() {
+      const category = $("category").value;
+
+      // 初期状態リセット
+      $("pipe-fields").style.display = "none";
+      $("fitting-fields").style.display = "none";
+      $("other-fields").style.display = "none";
+      $("material-row").style.display = "none";
+      $("pipe-type").parentElement.style.display = "block";
+      $("size").parentElement.style.display = "block";
+
+      if (category === "pipe") {
+        $("pipe-fields").style.display = "grid";
+      } else if (category === "other") {
+        $("other-fields").style.display = "grid";
+        $("pipe-type").parentElement.style.display = "none";
+        $("size").parentElement.style.display = "none";
+      } else if (category === "support") {
+        $("fitting-fields").style.display = "grid";
+        $("pipe-type").parentElement.style.display = "none"; // 管種不要
+        $("material-row").style.display = "grid"; // 材質
+        populateFittingOptions(category);
+      } else {
+        // 継手・異径継手・伸縮継手
+        $("fitting-fields").style.display = "grid";
+        populateFittingOptions(category);
+      }
+
+      // 異径のときだけ呼び径2を表示
+      $("size2-row").style.display = category === "reducing" ? "grid" : "none";
+    }
+
+    function onAddEntry() {
+      const category = $("category").value;
+      const pipeType = $("pipe-type").value;
+      const size = $("size").value;
+      const size2 = $("size2").value;
+
+      if (category === "pipe") {
+        if (!pipeType || !size) {
+          alert("管種と呼び径を選択してください。");
+          return;
+        }
+        const lengthVal = $("pipe-length").value;
+        const length = Number(lengthVal);
+        if (!lengthVal || isNaN(length) || length <= 0) {
+          alert("延長(m)を正しく入力してください。");
+          return;
+        }
+        entries.push({
+          id: genId(),
+          category: "pipe",
+          pipeType,
+          size,
+          length,
+        });
+        $("pipe-length").value = "";
+      } else if (category === "other") {
+        const name = $("other-name").value.trim();
+        const qtyVal = $("other-qty").value;
+        const quantity = Number(qtyVal);
+
+        if (!name) {
+          alert("名称を入力してください。（例：ポンプ・給湯器など）");
+          return;
+        }
+        if (!qtyVal || isNaN(quantity) || quantity <= 0) {
+          alert("数量を正しく入力してください。");
+          return;
+        }
+
+        entries.push({
+          id: genId(),
+          category: "other",
+          pipeType: "",
+          size: "",
+          fittingType: name,
+          quantity,
+        });
+        $("other-qty").value = "";
+        $("other-name").value = "";
+      } else if (category === "support") {
+        // 配管固定金具：材質＋呼び径＋金具種類＋数量
+        const material = $("material").value;
+        const fittingType = $("fitting-type").value;
+        const qtyVal = $("fitting-qty").value;
+        const quantity = Number(qtyVal);
+
+        if (!size) {
+          alert("呼び径を選択してください。");
+          return;
+        }
+        if (!fittingType) {
+          alert("金具種類を選択してください。");
+          return;
+        }
+        if (!qtyVal || isNaN(quantity) || quantity <= 0) {
+          alert("数量を正しく入力してください。");
+          return;
+        }
+
+        entries.push({
+          id: genId(),
+          category: "support",
+          pipeType: material, // pipeTypeを材質として使用
+          size,
+          fittingType,
+          quantity,
+        });
+        $("fitting-qty").value = "";
+      } else {
+        // 継手・異径継手・伸縮継手
+        if (!pipeType || !size) {
+          alert("管種と呼び径を選択してください。");
+          return;
+        }
+
+        if (category === "reducing" && !size2) {
+          alert("異径継手は呼び径2も選択してください。");
+          return;
+        }
+
+        const fittingType = $("fitting-type").value;
+        const qtyVal = $("fitting-qty").value;
+        const quantity = Number(qtyVal);
+
+        if (!fittingType) {
+          alert("継手種類を選択してください。");
+          return;
+        }
+        if (!qtyVal || isNaN(quantity) || quantity <= 0) {
+          alert("数量を正しく入力してください。");
+          return;
+        }
+
+        entries.push({
+          id: genId(),
+          category,
+          pipeType,
+          size,
+          size2: category === "reducing" ? size2 : undefined,
+          fittingType,
+          quantity,
+        });
+        $("fitting-qty").value = "";
+      }
+
+      saveEntries();
+      renderEntryList();
+      renderSummary();
+    }
+
+    function onClearAll() {
+      if (!confirm("全ての入力データを削除しますか？")) return;
+      entries = [];
+      saveEntries();
+      renderEntryList();
+      renderSummary();
+    }
+
+    function onCopyCsv() {
+      const rows = window.__summaryRows || [];
+      if (!rows.length) {
+        alert("集計データがありません。先に材料を入力してください。");
+        return;
+      }
+
+      const lines = [];
+
+      // 先頭に現場情報
+      if (meta.siteName || meta.workName || meta.date) {
+        lines.push(
+          ["現場名", csvEscape(meta.siteName)].join(","),
+          ["工事名", csvEscape(meta.workName)].join(","),
+          ["日付", csvEscape(meta.date)].join(","),
+          "" // 空行
+        );
+      }
+
+      const header = ["種別", "管種／材質", "呼び径", "継手種類／名称", "数量", "単位"];
+      lines.push(header.join(","));
+
+      rows.forEach((r) => {
+        let catLabel;
+        if (r.category === "pipe") catLabel = "管";
+        else if (r.category === "expansion") catLabel = "伸縮継手";
+        else if (r.category === "reducing") catLabel = "異径継手";
+        else if (r.category === "support") catLabel = "配管固定金具";
+        else if (r.category === "other") catLabel = "その他";
+        else catLabel = "継手";
+
+        const sizeStr =
+          r.category === "reducing" && r.size2
+            ? `${r.size}A×${r.size2}A`
+            : (r.category === "other" ? "" : (r.size ? `${r.size}A` : ""));
+
+        const cells = [
+          catLabel,
+          r.category === "other" ? "" : r.pipeType,
+          sizeStr,
+          r.fittingType || "",
+          formatNumber(r.totalQty),
+          r.unit,
+        ].map(csvEscape);
+
+        lines.push(cells.join(","));
+      });
+
+      const csvText = lines.join("\n");
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(csvText)
+          .then(() => alert("CSV形式でコピーしました。Excelなどに貼り付けてください。"))
+          .catch(() => fallbackCopyText(csvText));
+      } else {
+        fallbackCopyText(csvText);
+      }
+    }
+
+    function fallbackCopyText(text) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.top = "-1000px";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        document.execCommand("copy");
+        alert("CSV形式でコピーしました。（旧ブラウザ用）");
+      } catch {
+        alert("コピーに失敗しました。テキストを手動で選択してコピーしてください。");
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadEntries();
+      loadMeta();
+
+      // 現場情報の反映
+      $("site-name").value = meta.siteName || "";
+      $("work-name").value = meta.workName || "";
+      $("site-date").value = meta.date || "";
+
+      $("site-name").addEventListener("input", (e) => {
+        meta.siteName = e.target.value;
+        saveMeta();
+        renderMetaDisplay();
+      });
+      $("work-name").addEventListener("input", (e) => {
+        meta.workName = e.target.value;
+        saveMeta();
+        renderMetaDisplay();
+      });
+      $("site-date").addEventListener("input", (e) => {
+        meta.date = e.target.value;
+        saveMeta();
+        renderMetaDisplay();
+      });
+
+      renderMetaDisplay();
+      renderEntryList();
+      renderSummary();
+
+      $("category").addEventListener("change", onCategoryChange);
+      $("add-entry-btn").addEventListener("click", (e) => {
+        e.preventDefault();
+        onAddEntry();
+      });
+      $("clear-all-btn").addEventListener("click", (e) => {
+        e.preventDefault();
+        onClearAll();
+      });
+      $("copy-csv-btn").addEventListener("click", (e) => {
+        e.preventDefault();
+        onCopyCsv();
+      });
+
+      populateFittingOptions("fitting");
+      onCategoryChange();
+    });
+  </script>
+</body>
+</html>
